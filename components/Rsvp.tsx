@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
+import { submitRsvp } from "@/app/rsvp/actions";
 import { useT } from "@/lib/language";
 import SectionHeader from "./SectionHeader";
 
@@ -25,13 +26,23 @@ export default function Rsvp() {
   const t = useT();
   const [submitted, setSubmitted] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const nome = (data.get("nome") as string | null)?.trim() ?? "";
-    setFirstName(nome.split(" ")[0] || nome);
-    setSubmitted(true);
+    setError(null);
+    start(async () => {
+      const res = await submitRsvp(data);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setFirstName(nome.split(" ")[0] || nome);
+      setSubmitted(true);
+    });
   };
 
   return (
@@ -62,8 +73,10 @@ export default function Rsvp() {
               <label style={labelStyle}>{t("Recado para os noivos", "Message to the couple")}</label>
               <textarea name="obs" rows={3} style={{ ...inputStyle, resize: "vertical" }} />
             </div>
+            {error && <p style={{ color: "#a33", fontSize: 14, margin: 0 }}>{error}</p>}
             <button
               type="submit"
+              disabled={pending}
               style={{
                 background: "var(--gold)",
                 color: "#fff",
@@ -77,7 +90,7 @@ export default function Rsvp() {
                 marginTop: 6,
               }}
             >
-              {t("Confirmar minha presença", "Confirm my attendance")}
+              {pending ? t("Enviando...", "Sending...") : t("Confirmar minha presença", "Confirm my attendance")}
             </button>
           </form>
         ) : (
@@ -91,9 +104,6 @@ export default function Rsvp() {
                 "Ficamos muito felizes que você fará parte deste dia. Prepare-se para celebrar conosco em 17 de abril de 2027.",
                 "We are so happy you will be part of this day. Get ready to celebrate with us on April 17, 2027."
               )}
-            </p>
-            <p style={{ fontSize: 13, color: "var(--muted-3)", margin: "22px 0 0" }}>
-              {t("Uma confirmação será enviada para seu e-mail e WhatsApp.", "A confirmation will be sent to your e-mail and WhatsApp.")}
             </p>
           </div>
         )}

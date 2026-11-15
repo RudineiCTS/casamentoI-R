@@ -67,7 +67,6 @@ export default function GiftModal({
             </div>
           )}
 
-          <PixCard pix={pix} amount={total} />
 
           {onlinePayment && (
             <button
@@ -78,12 +77,18 @@ export default function GiftModal({
                   if (res?.error) setError(res.error);
                 })
               }
-              style={{ background: "var(--ink)", color: "#fff", border: 0, padding: "15px", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", borderRadius: 2 }}
+              style={{ background: "var(--gold)", color: "#fff", border: 0, padding: "17px", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", borderRadius: 2 }}
             >
-              {pending ? t("Abrindo pagamento...", "Opening checkout...") : t(`Pagar ${total} com cartão`, `Pay ${total} by card`)}
+              {pending ? t("Abrindo pagamento...", "Opening checkout...") : t(`Pagar ${total} com cartão ou Pix`, `Pay ${total} by card or Pix`)}
             </button>
           )}
           {error && <p style={{ color: "#a33", fontSize: 13, margin: 0 }}>{error}</p>}
+          {onlinePayment && (
+            <p style={{ textAlign: "center", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted-3)", margin: "4px 0 -6px" }}>
+              {t("ou faça um PIX direto", "or send a PIX directly")}
+            </p>
+          )}
+          <PixCard pix={pix} amount={total} />
 
           {gift.storeUrl && (
             <a href={gift.storeUrl} target="_blank" rel="noopener noreferrer" style={{ textAlign: "center", fontSize: 13, color: "var(--gold-dark)", textDecoration: "underline" }}>

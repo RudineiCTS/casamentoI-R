@@ -4,12 +4,14 @@ import { formatBRL, isAvailable } from "@/lib/gifts/types";
 import { btnPrimary, card } from "@/components/painel/ui";
 import GiftRowActions from "@/components/painel/GiftRowActions";
 import GiftThumb from "@/components/gifts/GiftThumb";
+import { listContributions } from "@/lib/gifts/contributions";
 
 export const metadata = { title: "Lista de Presentes · Painel dos Noivos" };
 
 export default async function PresentesAdmin({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
   const { tipo } = await searchParams;
-  const all = await listGifts();
+  const [all, contributions] = await Promise.all([listGifts(), listContributions()]);
+  const paidOnline = contributions.reduce((s, c) => s + c.amount_cents, 0);
   const gifts = tipo ? all.filter((g) => g.kind === tipo) : all;
 
   const received = all.filter((g) => !isAvailable(g)).length;
@@ -20,6 +22,7 @@ export default async function PresentesAdmin({ searchParams }: { searchParams: P
     { label: "Visíveis no site", value: String(all.filter((g) => g.visible).length) },
     { label: "Recebidos / esgotados", value: String(received) },
     { label: "Valor recebido (estimado)", value: formatBRL(quotaValue) },
+    { label: "Pago online (Stripe)", value: formatBRL(paidOnline) },
   ];
 
   const tabs = [
@@ -103,6 +106,33 @@ export default async function PresentesAdmin({ searchParams }: { searchParams: P
           </div>
         ))}
       </div>
+
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ fontFamily: "var(--font-cormorant), serif", fontWeight: 400, fontSize: 30, margin: "0 0 14px" }}>Pagamentos online</h2>
+        <div style={{ ...card, overflow: "hidden" }}>
+          {contributions.length === 0 ? (
+            <p style={{ padding: 28, textAlign: "center", color: "var(--muted-2)", fontSize: 14 }}>Nenhum pagamento online ainda.</p>
+          ) : (
+            contributions.map((c, i) => (
+              <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "14px 18px", borderTop: i ? "1px solid var(--line)" : 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 15, fontWeight: 500, margin: 0 }}>
+                    {c.guest_name || c.guest_email || "Convidado"} <span style={{ fontWeight: 400, color: "var(--muted-2)" }}>presenteou</span> {c.gift_title}
+                    {c.quantity > 1 && ` (${c.quantity} cotas)`}
+                  </p>
+                  {c.message && <p style={{ fontSize: 13.5, color: "var(--muted-1)", fontStyle: "italic", margin: "4px 0 0" }}>“{c.message}”</p>}
+                  <p style={{ fontSize: 12, color: "var(--muted-2)", margin: "4px 0 0" }}>
+                    {new Date(c.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                    {c.payment_method && ` · ${c.payment_method === "pix" ? "Pix" : c.payment_method === "card" ? "Cartão" : c.payment_method}`}
+                    {c.guest_email && ` · ${c.guest_email}`}
+                  </p>
+                </div>
+                <span style={{ fontFamily: "var(--font-cormorant), serif", fontSize: 22 }}>{formatBRL(c.amount_cents)}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }
